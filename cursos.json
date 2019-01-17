@@ -1,0 +1,57 @@
+{
+	"año" : 2019,
+	"duracion" : "4 semanas",
+	"tema" : "Big Data",
+	"alumnos" : [
+		{
+			"nombre" : "Ignacio",
+			"apellido" : "Zullo Salvucci",
+			"dni" : 40972017,
+			"direccion" : "Santos Vega 5721",
+			"nota" : 8
+		},
+		{
+			"nombre" : "Leandro",
+			"apelllido" : "Szikora",
+			"dni" : 40852697,
+			"direccion" : "Pte. Peron 457",
+			"nota" : 5
+		}
+	]
+}
+{
+	"año" : 2019,
+	"duracion" : "6 semanas",
+	"tema" : "JavaScript",
+	"alumnos" : [ ],
+	"__v" : 0
+}
+{
+	"año" : 2019,
+	"duracion" : "8 semanas",
+	"tema" : "Mobile",
+	"alumnos" : [ ],
+	"__v" : 0
+}
+{
+	"año" : 2018,
+	"duracion" : "4 semanas",
+	"tema" : "Back-End",
+	"alumnos" : [
+		{
+			"nombre" : "Guido",
+			"apellido" : "Perez",
+			"dni" : 41258976,
+			"direccion" : "Alvear 2148",
+			"nota" : 7
+		},
+		{
+			"nombre" : "Anibal",
+			"apelllido" : "Dominguez",
+			"dni" : 30258741,
+			"direccion" : "Nestor Kirchner 457",
+			"nota" : 5
+		}
+	]
+}
+
