@@ -25,7 +25,7 @@ function findOneCurso(req, res, onSuccess){
     });
 }
 
-function verificarToken(req, res, next){
+router.use(function(req,res,next) {
     const bearerHeader = req.headers['authorization'];
 
     if(typeof bearerHeader !== 'undefined') {
@@ -35,102 +35,80 @@ function verificarToken(req, res, next){
 
         req.token = bearerToken;
 
-        next();
+        jwt.verify(req.token, 'clavePrivada', (err, authData) => {
+            if (err) {
+                res.status(401).json({message: "Token Erroneo"});
+            } else {
+                next();
+                authData;
+            }
+        });
     } else {
-        res.status(403).json({message:"No Token"});
+        res.status(401).json({message:"No Token"});
     }
-}
+});
 
 /* GET http://localhost:3000/api/cursos */
-router.get('/', verificarToken, function(req, res, next) {
-    jwt.verify(req.token, 'clavePrivada', (err, authData) => {
-        if(err) {
-            res.status(403).json({message:"Token Erroneo"});
+router.get('/', function(req, res, next) {
+    if(req.query.hasOwnProperty("tema")){
+        delete req.query.tema;
+    }
+
+    if(req.query.hasOwnProperty("alumnos")){
+        delete req.query.alumnos;
+    }
+
+    Curso.find(req.query) .limit(10).then(
+        (cursos) => {
+            if(cursos.length == 0) {
+                res.status(204).json({message: "No hay contenido"});
+                return;
+            }
+
+            res.json(cursos);
+        }).catch( (err) => {
+            console.error(err);
+            res.status(500).send();
+        });
+});
+
+/* GET http://localhost:3000/api/cursos/:id */
+router.get('/:id', function(req, res){
+    findOneCurso(req, res, (curso) => curso);
+});
+
+/* GET http://localhost:3000/api/cursos/:id/alumnos */
+router.get('/:id/alumnos', function(req, res){
+    findOneCurso(req, res, (curso) => {
+        if(curso.getAlumnos().length == 0){
+            res.status(204).json({message: "No hay contenido"});
+            return;
         } else {
-            if(req.query.hasOwnProperty("tema")){
-                delete req.query.tema;
-            }
-
-            if(req.query.hasOwnProperty("alumnos")){
-                delete req.query.alumnos;
-            }
-
-            Curso.find(req.query) .limit(10).then(
-                (cursos) => {
-                    if(cursos.length == 0) {
-                        res.status(204).json({message: "No hay contenido"});
-                        return;
-                    }
-
-                    res.json(cursos);
-
-                }).catch( (err) => {
-                console.error(err);
-                res.status(500).send();
-            });
-            authData;
+            res.send(curso.getAlumnos());
         }
     })
 });
 
-/* GET http://localhost:3000/api/cursos/:id */
-router.get('/:id', verificarToken, function(req, res){
-    jwt.verify(req.token, 'clavePrivada', (err, authData) => {
-        if(err) {
-            res.status(403).json({message:"Token Erroneo"});
-        } else {
-            findOneCurso(req, res, (curso) => curso);
-            authData;
-        }
-    });
-});
-
-/* GET http://localhost:3000/api/cursos/:id/alumnos */
-router.get('/:id/alumnos', verificarToken, function(req, res){
-    jwt.verify(req.token, 'clavePrivada', (err, authData) => {
-        if (err) {
-            res.status(403).json({message: "Token Erroneo"});
-        } else {
-            findOneCurso(req, res, (curso) => {
-                if(curso.getAlumnos().length == 0){
-                    res.status(204).json({message: "No hay contenido"});
-                    return;
-                }
-                curso.getAlumnos();
-            });
-            authData;
-        }
-    });
-});
-
 /* DELETE http://localhost:3000/api/cursos/:id */
-router.delete('/:id', verificarToken, function(req, res){
-    jwt.verify(req.token, 'clavePrivada', (err, authData) => {
-        if (err) {
-            res.status(403).json({message: "Token Erroneo"});
-        } else {
-            Curso.findOneAndRemove({_id: req.params.id}).then(function (curso) {
-                if (curso == null) {
-                    res.status(404).json({message: "No hay contenido"});
-                    return;
-                }
-
-                res.json(curso);
-            }).catch((err) => {
-                console.error(err);
-                res.status(500).send();
-            })
-            authData;
+router.delete('/:id', function(req, res){
+    Curso.findOneAndRemove({_id: req.params.id}).then(function (curso) {
+        if (curso == null) {
+            res.status(404).json({message: "No hay contenido"});
+            return;
         }
-    });
+        res.json(curso);
+    }).catch((err) => {
+        console.error(err);
+        res.status(500).send();
+    })
 });
 
 /* POST http://localhost:3000/api/cursos */
-router.post('/', verificarToken, checkSchema({
+router.post('/', checkSchema({
     año:{
         in: ['body'],
         errorMessage: "El campo año del curso es erroneo",
-        isNumber: true
+        isInt: true
     },
     duracion:{
         in: ['body'],
@@ -143,46 +121,31 @@ router.post('/', verificarToken, checkSchema({
         isString: true
     }
 }), function(req, res) {
-    jwt.verify(req.token, 'clavePrivada', (err, authData) => {
-        if (err) {
-            res.status(403).json({message: "Token Erroneo"});
-        } else {
+    let validation = validationResult(req).array();
 
-            let validation = validationResult(req).array();
+    if (validation.length > 0) {
+        res.status(400).json(validation);
+        return;
+    }
 
-            if (validation.length > 0) {
-                res.status(400).json(validation);
-                return;
-            }
+    var curso = new Curso({
+        año: req.body.año,
+        duracion: req.body.duracion,
+        tema: req.body.tema
+    });
 
-            var curso = new Curso({
-                año: req.body.año,
-                duracion: req.body.duracion,
-                tema: req.body.tema
-            });
-
-            curso.save().then((doc) =>
-                res.status(201).json(doc)
-            ).catch((err) => {
-                console.error(err);
-                res.status(500).send();
-            });
-            authData;
-        }
+    curso.save().then((doc) =>
+            res.status(201).json(doc)
+    ).catch((err) => {
+        console.error(err);
+        res.status(500).send();
     });
 });
 
 
 /* GET http://localhost:3000/api/cursos/:id/alumnos/destacado */
-router.get('/:id/alumnos/destacado', verificarToken, function(req,res) {
-    jwt.verify(req.token, 'clavePrivada', (err, authData) => {
-        if (err) {
-            res.status(403).json({message: "Token Erroneo"});
-        } else {
-            findOneCurso(req, res, (curso) => curso.getAlumnoDestacado());
-            authData;
-        }
-    });
+router.get('/:id/alumnos/destacado', function(req,res) {
+    findOneCurso(req, res, (curso) => res.send(curso.getAlumnoDestacado()));
 });
 
 module.exports = router;

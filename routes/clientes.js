@@ -8,8 +8,7 @@ router.get('/', function(req, res, next) {
    Curso.distinct("alumnos", null, function(err, clientes){
      if(err){
        console.error(err);
-       res.status(500);
-       res.send();
+       res.status(500).send();
      } else {
        res.json(clientes);
      }
